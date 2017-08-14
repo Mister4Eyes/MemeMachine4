@@ -78,6 +78,7 @@ Meme machine 4 is designed with plugins in mind. For me, that was to keep things
 ## License
 This is being released under the WTFPL license.
 I can't be arsed to check if anyone is breaking a license I set up and this license most reflects how I feel.
+
 ![WTFPL]
 
 [WTFPL]: http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png "Here is the pretty picture you asked for."
