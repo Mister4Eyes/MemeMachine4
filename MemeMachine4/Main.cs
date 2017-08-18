@@ -139,12 +139,27 @@ namespace MemeMachine4.Master
 
 			client.Log += Client_Log;
 
-			client.MessageReceived	+= Client_MessageReceived;
-			client.MessageDeleted	+= Client_MessageDeleted;
-			client.MessageUpdated	+= Client_MessageUpdated;
-			client.ReactionAdded	+= Client_ReactionAdded;
-			client.ReactionRemoved	+= Client_ReactionRemoved;
-			
+			client.MessageReceived			+= Client_MessageReceived;
+			client.MessageDeleted			+= Client_MessageDeleted;
+			client.MessageUpdated			+= Client_MessageUpdated;
+			client.ReactionAdded			+= Client_ReactionAdded;
+			client.ReactionRemoved			+= Client_ReactionRemoved;
+			client.ChannelCreated			+= Client_ChannelCreated;
+			client.ChannelDestroyed			+= Client_ChannelDestroyed;
+			client.ChannelUpdated			+= Client_ChannelUpdated;
+			client.GuildMemberUpdated		+= Client_GuildMemberUpdated;
+			client.GuildUpdated				+= Client_GuildUpdated;
+			client.RoleCreated				+= Client_RoleCreated;
+			client.RoleDeleted				+= Client_RoleDeleted;
+			client.RoleUpdated				+= Client_RoleUpdated;
+			client.UserBanned				+= Client_UserBanned;
+			client.UserIsTyping				+= Client_UserIsTyping;
+			client.UserJoined				+= Client_UserJoined;
+			client.UserLeft					+= Client_UserLeft;
+			client.UserUnbanned				+= Client_UserUnbanned;
+			client.UserUpdated				+= Client_UserUpdated;
+			client.UserVoiceStateUpdated	+= Client_UserVoiceStateUpdated;
+
 			await client.LoginAsync(TokenType.Bot, token);
 			await client.StartAsync();
 
@@ -186,13 +201,13 @@ namespace MemeMachine4.Master
 					break;
 			}
 
-			Console.Write("{0}\n", arg.Message);
+			Console.WriteLine(arg.Message);
 			Utilities.SetColor();
-			
-			return CompletedTask();
+
+			return Task.CompletedTask;
 		}
 
-		private async Task EvaluateAndExecute(char Id, Func<Plugin, Task> func)
+		private async Task EvaluateAndExecute(Plugin.Functions Id, Func<Plugin, Task> func)
 		{
 			foreach (Plugin plug in plugins)
 			{
@@ -215,12 +230,133 @@ namespace MemeMachine4.Master
 			}
 		}
 
-#region PluginWrappers
+		#region PluginWrappers
+
+		private async Task Client_UserVoiceStateUpdated(SocketUser arg1, SocketVoiceState arg2, SocketVoiceState arg3)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserVoiceStateUpdated, (plug) =>
+			{
+				return plug.UserVoiceStateUpdated(arg1, arg2, arg3);
+			});
+		}
+
+		private async Task Client_UserUpdated(SocketUser arg1, SocketUser arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserUpdated, (plug) =>
+			{
+				return plug.UserUpdated(arg1, arg2);
+			});
+		}
+
+		private async Task Client_UserUnbanned(SocketUser arg1, SocketGuild arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserUnbanned, (plug) =>
+			{
+				return plug.UserUnbanned(arg1, arg2);
+			});
+		}
+
+		private async Task Client_UserLeft(SocketGuildUser arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserLeft, (plug) =>
+			{
+				return plug.UserLeft(arg);
+			});
+		}
+
+		private async Task Client_UserJoined(SocketGuildUser arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserJoined, (plug) =>
+			{
+				return plug.UserJoined(arg);
+			});
+		}
+
+		private async Task Client_UserIsTyping(SocketUser arg1, ISocketMessageChannel arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserIsTyping, (plug) =>
+			{
+				return plug.UserIsTyping(arg1, arg2);
+			});
+		}
+
+		private async Task Client_UserBanned(SocketUser arg1, SocketGuild arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.UserBanned, (plug) =>
+			{
+				return plug.UserBanned(arg1, arg2);
+			});
+		}
+
+		private async Task Client_RoleUpdated(SocketRole arg1, SocketRole arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.RoleUpdated, (plug) =>
+			{
+				return plug.RoleUpdated(arg1, arg2);
+			});
+		}
+
+		private async Task Client_RoleDeleted(SocketRole arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.RoleDeleted, (plug) =>
+			{
+				return plug.RoleDeleted(arg);
+			});
+		}
+
+		private async Task Client_RoleCreated(SocketRole arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.RoleCreated, (plug) =>
+			{
+				return plug.RoleCreated(arg);
+			});
+		}
+
+		private async Task Client_GuildUpdated(SocketGuild arg1, SocketGuild arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.GuildUpdated, (plug) =>
+			{
+				return plug.GuildUpdated(arg1, arg2);
+			});
+		}
+
+		private async Task Client_GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.GuildMemberUpdated, (plug) =>
+			{
+				return plug.GuildMemberUpdated(arg1, arg2);
+			});
+		}
+
+		private async Task Client_ChannelUpdated(SocketChannel arg1, SocketChannel arg2)
+		{
+			await EvaluateAndExecute(Plugin.Functions.ChannelUpdated, (plug) =>
+			{
+				return plug.ChannelUpdated(arg1, arg2);
+			});
+		}
+
+		private async Task Client_ChannelDestroyed(SocketChannel arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.ChannelDestroyed, (plug) =>
+			{
+				return plug.ChannelDestroyed(arg);
+			});
+		}
+
+		private async Task Client_ChannelCreated(SocketChannel arg)
+		{
+			await EvaluateAndExecute(Plugin.Functions.ChannelCreated, (plug) =>
+			{
+				return plug.ChannelCreated(arg);
+			});
+		}
+
 		private async Task Client_MessageUpdated(	Cacheable<IMessage, ulong> messageCach,
 													SocketMessage message,
 													ISocketMessageChannel channel)
 		{
-			await EvaluateAndExecute(Plugin.Id_Message_Updated, (plug) =>
+			await EvaluateAndExecute(Plugin.Functions.MessageUpdated, (plug) =>
 			{
 				return plug.MessageUpdated(messageCach, message, channel);
 			});
@@ -228,7 +364,7 @@ namespace MemeMachine4.Master
 
 		private async Task Client_MessageReceived(	SocketMessage message)
 		{
-			await EvaluateAndExecute(Plugin.Id_Message_Received, (plug) =>
+			await EvaluateAndExecute(Plugin.Functions.MessageReceived, (plug) =>
 			{
 				return plug.MessageReceived(message);
 			});
@@ -237,7 +373,7 @@ namespace MemeMachine4.Master
 		private async Task Client_MessageDeleted(	Cacheable<IMessage, ulong> messageCach,
 													ISocketMessageChannel message)
 		{
-			await EvaluateAndExecute(Plugin.Id_Message_Deleted, (plug) =>
+			await EvaluateAndExecute(Plugin.Functions.MessageDeleted, (plug) =>
 			{
 				return plug.MessageDeleted(messageCach, message);
 			});
@@ -247,7 +383,7 @@ namespace MemeMachine4.Master
 													ISocketMessageChannel message,
 													SocketReaction reaction)
 		{
-			await EvaluateAndExecute(Plugin.Id_Reaction_Removed, (plug) =>
+			await EvaluateAndExecute(Plugin.Functions.ReactionRemoved, (plug) =>
 			{
 				return plug.ReactionRemoved(messageCach, message, reaction);
 			});
@@ -257,7 +393,7 @@ namespace MemeMachine4.Master
 													ISocketMessageChannel message,
 													SocketReaction reaction)
 		{
-			await EvaluateAndExecute(Plugin.Id_Reaction_Added, (plug) =>
+			await EvaluateAndExecute(Plugin.Functions.ReactionAdded, (plug) =>
 			{
 				return plug.ReactionAdded(messageCach, message, reaction);
 			});
