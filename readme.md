@@ -41,7 +41,7 @@ public class YourFunction : Plugin
         //This indicates what functions you will be using.
         //It uses the or operator to signify what functions it uses.
         //If you use one of these but don't override it, a NotImplementedException will be thrown.
-        UsedFunctions = Id_Message_Received | Id_Message_Updated;
+        UsedFunctions = Functions.MessageReceived | Functions.MessageDeleted;
     }
     
     public async override Task MessageReceived(SocketMessage message)

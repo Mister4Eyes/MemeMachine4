@@ -30,14 +30,33 @@ namespace MemeMachine4.PluginBase
 
 	public class Plugin
 	{
-		public const char Id_Message_Updated	= (char)0x01;
-		public const char Id_Message_Received	= (char)0x02;
-		public const char Id_Message_Deleted	= (char)0x04;
-		public const char Id_Reaction_Removed	= (char)0x08;
-		public const char Id_Reaction_Added		= (char)0x10;
+		public enum Functions
+		{
+			None					= 0x00000,
+			ChannelCreated			= 0x00001,
+			ChannelDestroyed		= 0x00002,
+			ChannelUpdated			= 0x00004,
+			MessageUpdated			= 0x00008,
+			MessageReceived			= 0x00010,
+			MessageDeleted			= 0x00020,
+			ReactionAdded			= 0x00040,
+			ReactionRemoved			= 0x00080,
+			RoleCreated				= 0x00100,
+			RoleDeleted				= 0x00200,
+			RoleUpdated				= 0x00400,
+			UserBanned				= 0x00800,
+			UserIsTyping			= 0x01000,
+			UserJoined				= 0x02000,
+			UserLeft				= 0x04000,
+			UserUnbanned			= 0x08000,
+			UserUpdated				= 0x10000,
+			UserVoiceStateUpdated	= 0x20000,
+			GuildMemberUpdated		= 0x40000,
+			GuildUpdated			= 0x80000
+		}
 
 		public string Name								{ get; protected set; }	= string.Empty;
-		public char UsedFunctions						{ get; protected set; }	= (char)0x00;
+		public Functions UsedFunctions					{ get; protected set; }	= Functions.None;
 		public string WorkingDirectory					{ protected get; set; }	= string.Empty;
 		protected DiscordSocketClient DiscordSockClient	{ get; private set; }	= null;
 		protected Section PluginSection					{ get; private set; }	= null;
@@ -195,8 +214,23 @@ namespace MemeMachine4.PluginBase
 
 			return false;
 		}
-		
-		//Using virtual instead of abstract in order to keep substidary functions clean.
+
+		//Using virtual instead of abstract in order to keep substidary functions clean.		
+		virtual public Task ChannelCreated(SocketChannel arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task ChannelDestroyed(SocketChannel arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task ChannelUpdated(SocketChannel arg1, SocketChannel arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
 		virtual public Task MessageUpdated(
 			Cacheable<IMessage, ulong> messageCach,
 			SocketMessage message,
@@ -217,6 +251,14 @@ namespace MemeMachine4.PluginBase
 			throw new NotImplementedException($"Message deleted was not implemented {Name}.");
 		}
 
+		virtual public Task ReactionAdded(
+			Cacheable<IUserMessage, ulong> messageCach,
+			ISocketMessageChannel message,
+			SocketReaction reaction)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
 		virtual public Task ReactionRemoved(
 			Cacheable<IUserMessage, ulong> messageCach,
 			ISocketMessageChannel message,
@@ -224,11 +266,63 @@ namespace MemeMachine4.PluginBase
 		{
 			throw new NotImplementedException($"Reaction removed was not implemented {Name}.");
 		}
+		
+		virtual public Task RoleCreated(SocketRole arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
 
-		virtual public Task ReactionAdded(
-			Cacheable<IUserMessage, ulong> messageCach,
-			ISocketMessageChannel message,
-			SocketReaction reaction)
+		virtual public Task RoleDeleted(SocketRole arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task RoleUpdated(SocketRole arg1, SocketRole arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserBanned(SocketUser arg1, SocketGuild arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+		
+		virtual public Task UserIsTyping(SocketUser arg1, ISocketMessageChannel arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserJoined(SocketGuildUser arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserLeft(SocketGuildUser arg)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserUnbanned(SocketUser arg1, SocketGuild arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserUpdated(SocketUser arg1, SocketUser arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task UserVoiceStateUpdated(SocketUser arg1, SocketVoiceState arg2, SocketVoiceState arg3)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
+		{
+			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+		}
+
+		virtual public Task GuildUpdated(SocketGuild arg1, SocketGuild arg2)
 		{
 			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
 		}
