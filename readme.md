@@ -50,7 +50,7 @@ public class YourFunction : Plugin
         //Note, this function is what you most likely will be using 99% of the time.
     }
     
-    public override Task MessageDeleted(Cacheable<IMessage, ulong> messageCach, ISocketMessageChannel message)
+    public async override Task MessageDeleted(Cacheable<IMessage, ulong> messageCach, ISocketMessageChannel message)
     {
         //Your code here.
     }
@@ -72,7 +72,7 @@ Currently plans of getting this able to run on Linux are there but a few things 
 
 ## Motivation
 Meme Machine 4 was initially a personal bot for my server.
-However after realizing that on other servers, instead of having one bot doing everything, there are multiple bots that only do one thing, I decided to release my bot in hopes that it can reduce clutter in servers and possibly get more people to make bots for discord.
+However after realizing that on other servers, instead of having one bot doing everything, there are multiple bots that only do one thing, multiple things, or even having overlapping functionallity. I decided to release my bot in hopes that it can reduce clutter in servers and possibly get more people to make bots for discord.
 Meme machine 4 is designed with plugins in mind. For me, that was to keep things nice and organized having separate projects be their own thing.
 
 ## License
