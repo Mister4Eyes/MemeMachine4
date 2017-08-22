@@ -200,6 +200,7 @@ namespace MemeMachine4.PluginBase
 		{
 			DiscordSockClient = dsc;
 		}
+
 		public bool IsMentioningMe(SocketMessage message)
 		{
 			ulong id = DiscordSockClient.CurrentUser.Id;
