@@ -15,6 +15,9 @@ namespace MemeMachine4.Audio
 		Task aloop;
 		string ffmpegLoc;
 		Queue<Tuple<IVoiceChannel, Stream>> AudioQueue = new Queue<Tuple<IVoiceChannel, Stream>>();
+
+		Dictionary<IVoiceChannel, Queue<Stream>> SendingStreams = new Dictionary<IVoiceChannel, Queue<Stream>>();
+		Dictionary<IVoiceChannel, bool> StopRequest = new Dictionary<IVoiceChannel, bool>();
 		int QueueLength
 		{
 			get
@@ -118,10 +121,20 @@ namespace MemeMachine4.Audio
 					//This is the only thread that removes data from it as well.
 					PopQueue(out channel, out data);
 
-					IAudioClient client = await JoinChannel(channel);
-					await SendAudio(client, data);
-
-					await client.StopAsync();
+					if (!SendingStreams.ContainsKey(channel))
+					{
+						SendingStreams.Add(channel, new Queue<Stream>());
+						StopRequest.Add(channel, false);
+						SendingStreams[channel].Enqueue(data);
+						await SendAudio(channel);
+					}
+					else
+					{
+						lock (SendingStreams[channel])
+						{
+							SendingStreams[channel].Enqueue(data);
+						}
+					}
 				}
 			}
 		}
@@ -158,7 +171,6 @@ namespace MemeMachine4.Audio
 		
 		private Process CreateStream(string path)
 		{
-		
 			var ffmpeg = new ProcessStartInfo
 			{
 				FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
@@ -183,37 +195,62 @@ namespace MemeMachine4.Audio
 			}
 		}
 
-		private async Task SendAudio(IAudioClient client, Stream output)
+		private async Task SendAudio(IVoiceChannel channel)
 		{
+			IAudioClient client = await JoinChannel(channel);
+
 			const int minSize = 192000; //This is due to a bug with discordapi where it will hang if a sound less than 1 second is played.
-
-			if(output.Length < minSize)
-			{
-				int paddingLength = minSize - (int)output.Length;
-
-				if (output.CanSeek)
-				{
-					output.Seek(0, SeekOrigin.End);
-
-					output.Write(new byte[paddingLength], 0, paddingLength);
-
-					output.Seek(0, SeekOrigin.Begin);
-				}
-				else
-				{
-					Console.WriteLine(
-						"Could not seek the output. Therefor the bug cannot be mitagated." +
-						"Stopping before it hangs.");
-
-					return;
-				}
-			}
-
 			AudioOutStream discord = client.CreatePCMStream(AudioApplication.Mixed);
 
-			await output.CopyToAsync(discord);
-			await discord.FlushAsync();
-			Console.WriteLine("Sent audio.");
+			int length;
+			do
+			{
+				lock (SendingStreams[channel])
+				{
+					length = SendingStreams[channel].Count;
+				}
+				if (length != 0)
+				{
+					Stream cStream;
+					lock (SendingStreams[channel])
+					{
+						cStream = SendingStreams[channel].Dequeue();
+					}
+
+					if(cStream.Length < minSize)
+					{
+						cStream.Seek(0, SeekOrigin.End);
+						cStream.Write(new byte[minSize - cStream.Length], 0, (int)(minSize - cStream.Length));
+						cStream.Seek(0, SeekOrigin.Begin);
+					}
+
+					byte[] Chunk = new byte[minSize];
+
+					Console.WriteLine("Sending new audio.");
+
+					//Doing this bit syncronously in hopes it does a thing.
+					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
+					{
+						Console.WriteLine("Writing 1 second chunk.");
+						discord.Write(Chunk, 0, minSize);
+					}
+					discord.Flush();
+
+					StopRequest[channel] = false;
+				}
+			} while (length != 0);
+
+			Console.WriteLine("Sent all audio.");
+		}
+
+		public Task StopAudio(IVoiceChannel channel)
+		{
+			if (StopRequest.ContainsKey(channel))
+			{
+				StopRequest[channel] = true;
+			}
+
+			return Task.CompletedTask;
 		}
 	}
 }
