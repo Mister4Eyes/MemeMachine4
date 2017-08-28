@@ -87,7 +87,6 @@ namespace MemeMachine4.PluginBase
 
 			return await Ah.SendFile(voiceChannel, file);
 		}
-
 		//The wrappers for the audio streams
 		protected async Task<bool> SendAudioStream(SocketGuildUser user, Stream stream)
 		{
@@ -106,6 +105,10 @@ namespace MemeMachine4.PluginBase
 			return true;
 		}
 
+		protected async Task StopCurrentAudio(IVoiceChannel voiceChannel)
+		{
+			await Ah.StopAudio(voiceChannel);
+		}
 		#endregion
 
 		#region File Loading and saving functions.
@@ -196,6 +199,7 @@ namespace MemeMachine4.PluginBase
 		}
 		#endregion
 		
+		//This is still needed because there is an order to how these things are made. Sadly this is at the ass end of that order.
 		public void InjectSocketClient(DiscordSocketClient dsc)
 		{
 			DiscordSockClient = dsc;
@@ -270,62 +274,62 @@ namespace MemeMachine4.PluginBase
 		
 		virtual public Task RoleCreated(SocketRole arg)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"Role Created was not implemented {Name}.");
 		}
 
 		virtual public Task RoleDeleted(SocketRole arg)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"Role Deleted was not implemented {Name}.");
 		}
 
 		virtual public Task RoleUpdated(SocketRole arg1, SocketRole arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"Role Updated was not implemented {Name}.");
 		}
 
 		virtual public Task UserBanned(SocketUser arg1, SocketGuild arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Banned was not implemented {Name}.");
 		}
 		
 		virtual public Task UserIsTyping(SocketUser arg1, ISocketMessageChannel arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Is Typing was not implemented {Name}.");
 		}
 
 		virtual public Task UserJoined(SocketGuildUser arg)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Joined was not implemented {Name}.");
 		}
 
 		virtual public Task UserLeft(SocketGuildUser arg)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Left was not implemented {Name}.");
 		}
 
 		virtual public Task UserUnbanned(SocketUser arg1, SocketGuild arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Unbanned was not implemented {Name}.");
 		}
 
 		virtual public Task UserUpdated(SocketUser arg1, SocketUser arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Updated was not implemented {Name}.");
 		}
 
 		virtual public Task UserVoiceStateUpdated(SocketUser arg1, SocketVoiceState arg2, SocketVoiceState arg3)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"User Voice State Updated was not implemented {Name}.");
 		}
 
 		virtual public Task GuildMemberUpdated(SocketGuildUser arg1, SocketGuildUser arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"Guild Member Updated was not implemented {Name}.");
 		}
 
 		virtual public Task GuildUpdated(SocketGuild arg1, SocketGuild arg2)
 		{
-			throw new NotImplementedException($"Reaction added was not implemented {Name}.");
+			throw new NotImplementedException($"Guild Updated was not implemented {Name}.");
 		}
 	}
 }

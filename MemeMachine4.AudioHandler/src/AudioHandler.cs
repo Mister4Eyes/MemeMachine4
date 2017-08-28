@@ -228,7 +228,7 @@ namespace MemeMachine4.Audio
 
 					Console.WriteLine("Sending new audio.");
 
-					//Doing this bit syncronously in hopes it does a thing.
+					//Doing this bit syncronously in hopes it sends everything nicely.
 					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
 					{
 						#if DEBUG
