@@ -231,7 +231,9 @@ namespace MemeMachine4.Audio
 					//Doing this bit syncronously in hopes it does a thing.
 					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
 					{
+						#if DEBUG
 						Console.WriteLine("Writing 1 second chunk.");
+						#endif
 						discord.Write(Chunk, 0, minSize);
 					}
 					discord.Flush();
