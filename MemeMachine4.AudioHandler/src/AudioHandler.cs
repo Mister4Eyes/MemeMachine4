@@ -108,7 +108,7 @@ namespace MemeMachine4.Audio
 		}
 #endregion
 
-		private async Task AudioLoop()
+		private Task AudioLoop()
 		{
 			while (true)
 			{
@@ -126,7 +126,7 @@ namespace MemeMachine4.Audio
 						SendingStreams.Add(channel, new Queue<Stream>());
 						StopRequest.Add(channel, false);
 						SendingStreams[channel].Enqueue(data);
-						await SendAudio(channel);
+						Task.Run(()=>SendAudio(channel));
 					}
 					else
 					{
@@ -174,7 +174,7 @@ namespace MemeMachine4.Audio
 			var ffmpeg = new ProcessStartInfo
 			{
 				FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
-				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 pipe:1",
+				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 -x264opts threads=2 pipe:1",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 			};
@@ -235,6 +235,7 @@ namespace MemeMachine4.Audio
 						Console.WriteLine("Writing 1 second chunk.");
 						#endif
 						discord.Write(Chunk, 0, minSize);
+						Chunk = new byte[minSize];
 					}
 					discord.Flush();
 
@@ -243,6 +244,11 @@ namespace MemeMachine4.Audio
 			} while (length != 0);
 
 			Console.WriteLine("Sent all audio.");
+
+			await client.StopAsync();
+
+			SendingStreams.Remove(channel);
+			StopRequest.Remove(channel);
 		}
 
 		public Task StopAudio(IVoiceChannel channel)
