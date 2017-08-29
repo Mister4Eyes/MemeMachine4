@@ -61,6 +61,7 @@ Build that plugin as a library and you are all set.
 ## Want some plugins?
 Here are some plugins I've made for the project allready.
 If anyone else makes plugins and has them on github, contact me! I'll gladly post it here.
+
 [Mister 4 Eyes's plugins](https://github.com/Mister4Eyes/MM4-Plugins)
 
 ## Building from source
