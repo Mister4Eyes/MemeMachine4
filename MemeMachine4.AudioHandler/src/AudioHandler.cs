@@ -174,7 +174,7 @@ namespace MemeMachine4.Audio
 			var ffmpeg = new ProcessStartInfo
 			{
 				FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
-				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 -x264opts threads=2 pipe:1",
+				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 threads=2 pipe:1",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 			};
