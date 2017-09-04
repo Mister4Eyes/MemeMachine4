@@ -82,9 +82,9 @@ However after realizing that on other servers, instead of having one bot doing e
 Meme machine 4 is designed with plugins in mind. For me, that was to keep things nice and organized having separate projects be their own thing.
 
 ## License
-This is being released under the WTFPL license.
-I can't be arsed to check if anyone is breaking a license I set up and this license most reflects how I feel.
+This is being released with Unlicense.
+I can't be arsed to check if anyone is breaking a license I set up so this license most reflects how I feel.
 
-![WTFPL]
+![Unlicense]
 
-[WTFPL]: http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png "Here is the pretty picture you asked for."
+[Unlicense]: https://commons.wikimedia.org/wiki/File%3APD-icon.svg "Here is the pretty picture you asked for."
