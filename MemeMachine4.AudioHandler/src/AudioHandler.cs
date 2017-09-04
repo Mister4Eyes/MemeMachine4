@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Mister4Eyes.GeneralUtilities;
+using MemeMachine4.Audio.src;
 
 namespace MemeMachine4.Audio
 {
@@ -15,6 +16,9 @@ namespace MemeMachine4.Audio
 		Task aloop;
 		string ffmpegLoc;
 		Queue<Tuple<IVoiceChannel, Stream>> AudioQueue = new Queue<Tuple<IVoiceChannel, Stream>>();
+
+		Dictionary<IVoiceChannel, Queue<Stream>> SendingStreams = new Dictionary<IVoiceChannel, Queue<Stream>>();
+		Dictionary<IVoiceChannel, bool> StopRequest = new Dictionary<IVoiceChannel, bool>();
 		int QueueLength
 		{
 			get
@@ -37,20 +41,14 @@ namespace MemeMachine4.Audio
 			//Runs this asyncronously
 			await Task.Run(() =>
 			{
-				Console.WriteLine("Creating ffmpeg process.");
-				Process ffmpeg = CreateStream(path);
+				Console.WriteLine("Getting file stream.");
+				Stream outStream = CreateStream(path);
 
-				Console.WriteLine("Enquing data.");
-				Stream outStream = ffmpeg.StandardOutput.BaseStream;
-
-				Console.WriteLine("Loading file into memory.");
-
-				//Loads file into memory.
-				//Keeps it from studdering.
-				MemoryStream ms = new MemoryStream();
-				outStream.CopyTo(ms);
-				ms.Seek(-ms.Position, SeekOrigin.Current);
-				PushQueue(channel, ms);
+				if(outStream != null)
+				{
+					Console.WriteLine("Enqueuing.");
+					PushQueue(channel, outStream);
+				}
 			});
 
 			return true;
@@ -105,7 +103,7 @@ namespace MemeMachine4.Audio
 		}
 #endregion
 
-		private async Task AudioLoop()
+		private Task AudioLoop()
 		{
 			while (true)
 			{
@@ -118,10 +116,20 @@ namespace MemeMachine4.Audio
 					//This is the only thread that removes data from it as well.
 					PopQueue(out channel, out data);
 
-					IAudioClient client = await JoinChannel(channel);
-					await SendAudio(client, data);
-
-					await client.StopAsync();
+					if (!SendingStreams.ContainsKey(channel))
+					{
+						SendingStreams.Add(channel, new Queue<Stream>());
+						StopRequest.Add(channel, false);
+						SendingStreams[channel].Enqueue(data);
+						Task.Run(()=>SendAudio(channel));
+					}
+					else
+					{
+						lock (SendingStreams[channel])
+						{
+							SendingStreams[channel].Enqueue(data);
+						}
+					}
 				}
 			}
 		}
@@ -156,18 +164,37 @@ namespace MemeMachine4.Audio
 			aloop = Task.Run(AudioLoop);
 		}
 		
-		private Process CreateStream(string path)
+		private AudioFileStream CreateStream(string path)
 		{
-		
-			var ffmpeg = new ProcessStartInfo
-			{
-				FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
-				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 pipe:1",
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-			};
+			FileInfo file = new FileInfo(path);
 
-			return Process.Start(ffmpeg);
+			//Name without the extension
+			string name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+			string rawFile = $"./RawData/{name}.raw";
+			if (!Directory.Exists("./RawData"))
+			{
+				Directory.CreateDirectory("./RawData");
+			}
+			if (!File.Exists(rawFile))
+			{
+				var ffmpeg = new ProcessStartInfo
+				{
+					FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
+					Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 -acodec pcm_s16le ./RawData/{name}.raw",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+				};
+				Process process = Process.Start(ffmpeg);
+				process.WaitForExit();
+
+				Console.WriteLine(rawFile);
+				if (!File.Exists(rawFile))
+				{
+					return null;
+				}
+			}
+
+			return new AudioFileStream(rawFile);
 		}
 
 		private async Task<IAudioClient> JoinChannel(IVoiceChannel channel)
@@ -183,37 +210,67 @@ namespace MemeMachine4.Audio
 			}
 		}
 
-		private async Task SendAudio(IAudioClient client, Stream output)
+		private async Task SendAudio(IVoiceChannel channel)
 		{
+			IAudioClient client = await JoinChannel(channel);
+
 			const int minSize = 192000; //This is due to a bug with discordapi where it will hang if a sound less than 1 second is played.
-
-			if(output.Length < minSize)
-			{
-				int paddingLength = minSize - (int)output.Length;
-
-				if (output.CanSeek)
-				{
-					output.Seek(0, SeekOrigin.End);
-
-					output.Write(new byte[paddingLength], 0, paddingLength);
-
-					output.Seek(0, SeekOrigin.Begin);
-				}
-				else
-				{
-					Console.WriteLine(
-						"Could not seek the output. Therefor the bug cannot be mitagated." +
-						"Stopping before it hangs.");
-
-					return;
-				}
-			}
-
 			AudioOutStream discord = client.CreatePCMStream(AudioApplication.Mixed);
 
-			await output.CopyToAsync(discord);
-			await discord.FlushAsync();
-			Console.WriteLine("Sent audio.");
+			int length;
+			do
+			{
+				lock (SendingStreams[channel])
+				{
+					length = SendingStreams[channel].Count;
+				}
+				if (length != 0)
+				{
+					Stream cStream;
+					lock (SendingStreams[channel])
+					{
+						cStream = SendingStreams[channel].Dequeue();
+					}
+
+					if(cStream.Length < minSize)
+					{
+						cStream.Seek(0, SeekOrigin.End);
+						cStream.Write(new byte[minSize - cStream.Length], 0, (int)(minSize - cStream.Length));
+						cStream.Seek(0, SeekOrigin.Begin);
+					}
+
+					byte[] Chunk = new byte[minSize];
+
+					Console.WriteLine("Sending new audio.");
+
+					//Doing this bit syncronously in hopes it sends everything nicely.
+					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
+					{
+						discord.Write(Chunk, 0, minSize);
+						Chunk = new byte[minSize];
+					}
+					discord.Flush();
+					cStream.Dispose();
+					StopRequest[channel] = false;
+				}
+			} while (length != 0);
+
+			Console.WriteLine("Sent all audio.");
+
+			await client.StopAsync();
+			
+			SendingStreams.Remove(channel);
+			StopRequest.Remove(channel);
+		}
+
+		public Task StopAudio(IVoiceChannel channel)
+		{
+			if (StopRequest.ContainsKey(channel))
+			{
+				StopRequest[channel] = true;
+			}
+
+			return Task.CompletedTask;
 		}
 	}
 }
