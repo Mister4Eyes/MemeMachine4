@@ -85,6 +85,4 @@ Meme machine 4 is designed with plugins in mind. For me, that was to keep things
 This is being released with Unlicense.
 I can't be arsed to check if anyone is breaking a license I set up so this license most reflects how I feel.
 
-![Unlicense]
-
-[Unlicense]: https://commons.wikimedia.org/wiki/File%3APD-icon.svg "Here is the pretty picture you asked for."
+![](https://upload.wikimedia.org/wikipedia/commons/6/62/PD-icon.svg)
