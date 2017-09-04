@@ -74,9 +74,10 @@
     </Reference>
     <Reference Include="MemeMachine4.AudioHandler, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\MemeMachine4.AudioHandler\bin\Debug\MemeMachine4.AudioHandler.dll</HintPath>
+      <HintPath>..\MemeMachine4.AudioHandler\bin\Release\MemeMachine4.AudioHandler.dll</HintPath>
     </Reference>
-    <Reference Include="MemeMachine4.PluginBase">
+    <Reference Include="MemeMachine4.PluginBase, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\MemeMachine4.PluginBase\bin\Release\MemeMachine4.PluginBase.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />

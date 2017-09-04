@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using Mister4Eyes.GeneralUtilities;
+using MemeMachine4.Audio.src;
 
 namespace MemeMachine4.Audio
 {
@@ -40,20 +41,14 @@ namespace MemeMachine4.Audio
 			//Runs this asyncronously
 			await Task.Run(() =>
 			{
-				Console.WriteLine("Creating ffmpeg process.");
-				Process ffmpeg = CreateStream(path);
+				Console.WriteLine("Getting file stream.");
+				Stream outStream = CreateStream(path);
 
-				Console.WriteLine("Enquing data.");
-				Stream outStream = ffmpeg.StandardOutput.BaseStream;
-
-				Console.WriteLine("Loading file into memory.");
-
-				//Loads file into memory.
-				//Keeps it from studdering.
-				MemoryStream ms = new MemoryStream();
-				outStream.CopyTo(ms);
-				ms.Seek(-ms.Position, SeekOrigin.Current);
-				PushQueue(channel, ms);
+				if(outStream != null)
+				{
+					Console.WriteLine("Enqueuing.");
+					PushQueue(channel, outStream);
+				}
 			});
 
 			return true;
@@ -169,17 +164,37 @@ namespace MemeMachine4.Audio
 			aloop = Task.Run(AudioLoop);
 		}
 		
-		private Process CreateStream(string path)
+		private AudioFileStream CreateStream(string path)
 		{
-			var ffmpeg = new ProcessStartInfo
-			{
-				FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
-				Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 threads=2 pipe:1",
-				UseShellExecute = false,
-				RedirectStandardOutput = true,
-			};
+			FileInfo file = new FileInfo(path);
 
-			return Process.Start(ffmpeg);
+			//Name without the extension
+			string name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+			string rawFile = $"./RawData/{name}.raw";
+			if (!Directory.Exists("./RawData"))
+			{
+				Directory.CreateDirectory("./RawData");
+			}
+			if (!File.Exists(rawFile))
+			{
+				var ffmpeg = new ProcessStartInfo
+				{
+					FileName = ffmpegLoc,//TODO: Get config file to change the location of ffmpeg
+					Arguments = $"-i {path} -ac 2 -f s16le -ar 48000 -acodec pcm_s16le ./RawData/{name}.raw",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+				};
+				Process process = Process.Start(ffmpeg);
+				process.WaitForExit();
+
+				Console.WriteLine(rawFile);
+				if (!File.Exists(rawFile))
+				{
+					return null;
+				}
+			}
+
+			return new AudioFileStream(rawFile);
 		}
 
 		private async Task<IAudioClient> JoinChannel(IVoiceChannel channel)
@@ -231,14 +246,11 @@ namespace MemeMachine4.Audio
 					//Doing this bit syncronously in hopes it sends everything nicely.
 					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
 					{
-						#if DEBUG
-						Console.WriteLine("Writing 1 second chunk.");
-						#endif
 						discord.Write(Chunk, 0, minSize);
 						Chunk = new byte[minSize];
 					}
 					discord.Flush();
-
+					cStream.Dispose();
 					StopRequest[channel] = false;
 				}
 			} while (length != 0);
@@ -246,7 +258,7 @@ namespace MemeMachine4.Audio
 			Console.WriteLine("Sent all audio.");
 
 			await client.StopAsync();
-
+			
 			SendingStreams.Remove(channel);
 			StopRequest.Remove(channel);
 		}
