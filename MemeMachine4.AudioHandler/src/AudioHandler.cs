@@ -1,13 +1,16 @@
-﻿using Discord;
-using Discord.Audio;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+
+using Discord;
+using Discord.Audio;
+
+using MemeMachine4.Audio.src;
 
 using Mister4Eyes.GeneralUtilities;
-using MemeMachine4.Audio.src;
 
 namespace MemeMachine4.Audio
 {
@@ -15,18 +18,15 @@ namespace MemeMachine4.Audio
 	{
 		Task aloop;
 		string ffmpegLoc;
-		Queue<Tuple<IVoiceChannel, Stream>> AudioQueue = new Queue<Tuple<IVoiceChannel, Stream>>();
+		ConcurrentQueue<Tuple<IVoiceChannel, Stream>> AudioQueue = new ConcurrentQueue<Tuple<IVoiceChannel, Stream>>();
 
-		Dictionary<IVoiceChannel, Queue<Stream>> SendingStreams = new Dictionary<IVoiceChannel, Queue<Stream>>();
-		Dictionary<IVoiceChannel, bool> StopRequest = new Dictionary<IVoiceChannel, bool>();
+		ConcurrentDictionary<IVoiceChannel, ConcurrentQueue<Stream>> SendingStreams = new ConcurrentDictionary<IVoiceChannel, ConcurrentQueue<Stream>>();
+		ConcurrentDictionary<IVoiceChannel, bool> StopRequest = new ConcurrentDictionary<IVoiceChannel, bool>();
 		int QueueLength
 		{
 			get
 			{
-				lock(AudioQueue)
-				{
-					return AudioQueue.Count;
-				}
+				return AudioQueue.Count;
 			}
 		}
 
@@ -64,24 +64,26 @@ namespace MemeMachine4.Audio
 		#region QueueWrappers
 		private void PushQueue(IVoiceChannel channel, Stream stream)
 		{
-			lock(AudioQueue)
-			{
-				AudioQueue.Enqueue(new Tuple<IVoiceChannel, Stream>(channel, stream));
-			}
+			AudioQueue.Enqueue(new Tuple<IVoiceChannel, Stream>(channel, stream));
 		}
 
 		private Tuple<IVoiceChannel, Stream> PopQueue()
 		{
-			if (QueueLength > 0)
+			if (AudioQueue.IsEmpty)
 			{
-				lock (AudioQueue)
-				{
-					return AudioQueue.Dequeue();
-				}
+				return null;
 			}
 			else
 			{
-				return null;
+				Tuple<IVoiceChannel, Stream> outp;
+				if (AudioQueue.TryDequeue(out outp))
+				{
+					return outp;
+				}
+				else
+				{
+					return null;
+				}
 			}
 		}
 
@@ -118,10 +120,20 @@ namespace MemeMachine4.Audio
 
 					if (!SendingStreams.ContainsKey(channel))
 					{
-						SendingStreams.Add(channel, new Queue<Stream>());
-						StopRequest.Add(channel, false);
-						SendingStreams[channel].Enqueue(data);
-						Task.Run(()=>SendAudio(channel));
+						if(SendingStreams.TryAdd(channel, new ConcurrentQueue<Stream>()))
+						{
+							if(StopRequest.TryAdd(channel, false))
+							{
+								SendingStreams[channel].Enqueue(data);
+								Task.Run(() => SendAudio(channel));
+							}
+							else
+							{
+								ConcurrentQueue<Stream> cq;
+								SendingStreams.TryRemove(channel, out cq);
+								Console.WriteLine("Unknown failure...");
+							}
+						}
 					}
 					else
 					{
@@ -227,18 +239,10 @@ namespace MemeMachine4.Audio
 				if (length != 0)
 				{
 					Stream cStream;
-					lock (SendingStreams[channel])
+					if(!SendingStreams[channel].TryDequeue(out cStream))
 					{
-						cStream = SendingStreams[channel].Dequeue();
+						cStream = null;
 					}
-
-					if(cStream.Length < minSize)
-					{
-						cStream.Seek(0, SeekOrigin.End);
-						cStream.Write(new byte[minSize - cStream.Length], 0, (int)(minSize - cStream.Length));
-						cStream.Seek(0, SeekOrigin.Begin);
-					}
-
 					byte[] Chunk = new byte[minSize];
 
 					Console.WriteLine("Sending new audio.");
@@ -258,9 +262,23 @@ namespace MemeMachine4.Audio
 			Console.WriteLine("Sent all audio.");
 
 			await client.StopAsync();
-			
-			SendingStreams.Remove(channel);
-			StopRequest.Remove(channel);
+
+			ConcurrentQueue<Stream> data;
+			bool sq;
+			SendingStreams.TryRemove(channel, out data);
+			StopRequest.TryRemove(channel, out sq);
+
+			//Cleans up any data remaining that somehow got through
+			//More of a sanity check than anything
+			//And with threads, sanity checks are a logical thing to have
+			while (!data.IsEmpty)
+			{
+				Stream str;
+				if(data.TryDequeue(out str))
+				{
+					str.Dispose();
+				}
+			}
 		}
 
 		public Task StopAudio(IVoiceChannel channel)

@@ -11,9 +11,9 @@ namespace MemeMachine4.Audio.src
 	{
 		//We seperate these so it makes it easier to manipulate if we decide to change settings
 #if DEBUG
-		const int TimeOfChunks = 30; //How long each buffer should be in seconds
+		const int TimeOfChunks = 5; //How long each buffer should be in seconds
 #else
-		const int TimeOfChunks = 900; //How long each buffer should be in seconds
+		const int TimeOfChunks = 60; //How long each buffer should be in seconds
 #endif
 		const int SizeOfSecond = 192000; //Sizeof second in bytes
 
