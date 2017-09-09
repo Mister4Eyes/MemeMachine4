@@ -105,7 +105,7 @@ namespace MemeMachine4.Audio
 		}
 #endregion
 
-		private Task AudioLoop()
+		private async Task AudioLoop()
 		{
 			while (true)
 			{
@@ -137,12 +137,14 @@ namespace MemeMachine4.Audio
 					}
 					else
 					{
-						lock (SendingStreams[channel])
-						{
-							SendingStreams[channel].Enqueue(data);
-						}
+						SendingStreams[channel].Enqueue(data);
 					}
 				}
+
+				//Here to not eat up a shitload of cpu for no reason.
+				// 1/10th of a second is fast enough where someone wont notice any delay according to this
+				// http://www.atsc.org/wp-content/uploads/pdf/audio_seminar/12%20-%20JONES%20-%20Audio%20and%20Video%20synchronization-Status.pdf
+				await Task.Delay(100);
 			}
 		}
 
@@ -232,10 +234,8 @@ namespace MemeMachine4.Audio
 			int length;
 			do
 			{
-				lock (SendingStreams[channel])
-				{
-					length = SendingStreams[channel].Count;
-				}
+				length = SendingStreams[channel].Count;
+
 				if (length != 0)
 				{
 					Stream cStream;
