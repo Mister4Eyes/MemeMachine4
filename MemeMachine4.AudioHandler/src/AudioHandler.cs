@@ -125,6 +125,8 @@ namespace MemeMachine4.Audio
 							if(StopRequest.TryAdd(channel, false))
 							{
 								SendingStreams[channel].Enqueue(data);
+
+								//No need to await here
 								Task.Run(() => SendAudio(channel));
 							}
 							else
@@ -183,8 +185,8 @@ namespace MemeMachine4.Audio
 			FileInfo file = new FileInfo(path);
 
 			//Name without the extension
-			string name = file.Name.Substring(0, file.Name.Length - file.Extension.Length);
-			string rawFile = $"./RawData/{name}.raw";
+			string name		= file.Name.Substring(0, file.Name.Length - file.Extension.Length);
+			string rawFile	= $"./RawData/{name}.raw";
 			if (!Directory.Exists("./RawData"))
 			{
 				Directory.CreateDirectory("./RawData");
@@ -227,8 +229,8 @@ namespace MemeMachine4.Audio
 		private async Task SendAudio(IVoiceChannel channel)
 		{
 			IAudioClient client = await JoinChannel(channel);
-
-			const int minSize = 192000; //This is due to a bug with discordapi where it will hang if a sound less than 1 second is played.
+			const int lengthOfSecond = 192000;
+			const int minSize = lengthOfSecond * 5;
 			AudioOutStream discord = client.CreatePCMStream(AudioApplication.Mixed);
 
 			int length;
