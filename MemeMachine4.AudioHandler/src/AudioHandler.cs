@@ -180,7 +180,7 @@ namespace MemeMachine4.Audio
 			aloop = Task.Run(AudioLoop);
 		}
 		
-		private AudioFileStream CreateStream(string path)
+		private FileStream CreateStream(string path)
 		{
 			FileInfo file = new FileInfo(path);
 
@@ -210,7 +210,7 @@ namespace MemeMachine4.Audio
 				}
 			}
 
-			return new AudioFileStream(rawFile);
+			return new FileStream(rawFile, FileMode.Open);
 		}
 
 		private async Task<IAudioClient> JoinChannel(IVoiceChannel channel)
@@ -230,7 +230,7 @@ namespace MemeMachine4.Audio
 		{
 			IAudioClient client = await JoinChannel(channel);
 			const int lengthOfSecond = 192000;
-			const int minSize = lengthOfSecond * 5;
+			const int minSize = lengthOfSecond * 3;
 			AudioOutStream discord = client.CreatePCMStream(AudioApplication.Mixed);
 
 			int length;
@@ -248,12 +248,24 @@ namespace MemeMachine4.Audio
 					byte[] Chunk = new byte[minSize];
 
 					Console.WriteLine("Sending new audio.");
-
+					
 					//Doing this bit syncronously in hopes it sends everything nicely.
 					while(!StopRequest[channel] && 0 != cStream.Read(Chunk, 0, minSize))
 					{
-						discord.Write(Chunk, 0, minSize);
-						Chunk = new byte[minSize];
+						long remainingLength = cStream.Length - cStream.Position;
+						if (remainingLength > minSize && remainingLength < minSize * 2)
+						{
+							byte[] totBuffer = new byte[remainingLength + minSize];
+							Chunk.CopyTo(totBuffer, 0);
+							cStream.Read(totBuffer, minSize, (int)remainingLength);
+							discord.Write(totBuffer, 0, totBuffer.Length);
+							break;
+						}
+						else
+						{
+							discord.Write(Chunk, 0, minSize);
+							Chunk = new byte[minSize];
+						}
 					}
 					discord.Flush();
 					cStream.Dispose();

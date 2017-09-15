@@ -13,7 +13,7 @@ namespace MemeMachine4.Audio.src
 #if DEBUG
 		const int TimeOfChunks = 5; //How long each buffer should be in seconds
 #else
-		const int TimeOfChunks = 60; //How long each buffer should be in seconds
+		const int TimeOfChunks = 16; //How long each buffer should be in seconds
 #endif
 		const int SizeOfSecond = 192000; //Sizeof second in bytes
 
@@ -21,9 +21,9 @@ namespace MemeMachine4.Audio.src
 
 		string file;
 		FileStream fileStream;
+		MemoryStream TrashBuffer;
 		MemoryStream ActiveBuffer;
 		MemoryStream PassiveBuffer = null;
-		Task passiveLoading = Task.CompletedTask;
 		private long FileLength = 0;
 		bool initializeLater = false;
 		//We assume the file coming in is raw data
@@ -75,11 +75,8 @@ namespace MemeMachine4.Audio.src
 			//Ensures passive buffer is null while this is happening.
 			if(PassiveBuffer != null)
 			{
-				lock (PassiveBuffer)
-				{
-					PassiveBuffer.Dispose();
-					PassiveBuffer = null;
-				}
+				PassiveBuffer.Dispose();
+				PassiveBuffer = null;
 			}
 
 			byte[] buffer = new byte[TotalSize];
@@ -151,15 +148,15 @@ namespace MemeMachine4.Audio.src
 			{
 				if(PassiveBuffer != null)
 				{
-					passiveLoading.Wait();
 					length += PassiveBuffer.Read(buffer, 0, count - length);
-					
-					ActiveBuffer.Dispose();
+
+					TrashBuffer = ActiveBuffer;
 					ActiveBuffer = PassiveBuffer;
 					PassiveBuffer = null;
 
-					passiveLoading = Task.Run(() =>
+					Task.Run(() =>
 					{
+						TrashBuffer.Dispose();
 						LoadPassive();
 						return Task.CompletedTask;
 					});

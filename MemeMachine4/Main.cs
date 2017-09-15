@@ -167,8 +167,7 @@ namespace MemeMachine4.Master
 		}
 
 		private Task Client_Log(LogMessage arg)
-
-		{
+	{
 			ConsoleColor cc = Console.ForegroundColor;
 
 			Utilities.SetColor(ConsoleColor.White);
